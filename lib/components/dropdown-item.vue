@@ -1,5 +1,14 @@
 <template>
-    <a :is="itemType" class="dropdown-item" :to="to" :href="hrefString"  @click="click">
+    <a :is="itemType"
+       :class="['dropdown-item',{ disabled }]"
+       :to="to"
+       :href="hrefString"
+       :disabled="disabled"
+       tabindex="-1"
+       role="menuitem"
+       @click="click"
+       @click.native="click"
+    >
         <slot></slot>
     </a>
 </template>

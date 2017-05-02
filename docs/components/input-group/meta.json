@@ -1,0 +1,19 @@
+{
+  "title": "Input Groups",
+  "component": "bInputGroup",
+  "components": [
+    "bInputGroupAddon",
+    "bInputGroupButton"
+  ],
+  "slots": [
+    {
+      "name": "left",
+      "description": "Left attachment"
+    },
+    {
+      "name": "right",
+      "description": "Right attachment"
+    }
+  ],
+  "jsfiddle": "vvf4huxu"
+}

@@ -1,5 +1,10 @@
 <template>
     <div class="tabs">
+        <div v-if="bottom" :class="['tab-content',{'card-block': card}]" ref="tabsContainer">
+            <slot></slot>
+            <slot name="empty" v-if="!tabs || !tabs.length"></slot>
+        </div>
+
         <div :class="{'card-header': card}">
             <ul :class="['nav','nav-' + navStyle, card? 'card-header-'+navStyle: null]">
                 <li class="nav-item" v-for="(tab, index) in tabs">
@@ -7,7 +12,8 @@
                        :href="tab.href"
                        @click.prevent.stop="setTab(index)"
                        v-if="!tab.headHtml"
-                    >{{ tab.title }}</a>
+                        v-html="tab.title"
+                    ></a>
                     <div :class="['tab-head',{small: small, active: tab.localActive, disabled: tab.disabled}]"
                          v-else
                          v-html="tab.headHtml"></div>
@@ -15,7 +21,8 @@
                 <slot name="tabs"></slot>
             </ul>
         </div>
-        <div :class="['tab-content',{'card-block': card}]" ref="tabsContainer">
+
+        <div v-if="!bottom" :class="['tab-content',{'card-block': card}]" ref="tabsContainer">
             <slot></slot>
             <slot name="empty" v-if="!tabs || !tabs.length"></slot>
         </div>
@@ -54,6 +61,10 @@
                 default: false
             },
             lazy: {
+                type: Boolean,
+                default: false
+            },
+            bottom: {
                 type: Boolean,
                 default: false
             }

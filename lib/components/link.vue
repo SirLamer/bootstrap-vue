@@ -1,5 +1,13 @@
 <template>
-    <a :is="componentType" :active-class="activeClass" :to="to" :href="hrefString" :exact="exact" @click="click">
+    <a :is="componentType"
+       :active-class="activeClass"
+       :disabled="disabled"
+       :aria-disabled="disabled ? 'true' : 'false'"
+       :to="to"
+       :href="hrefString"
+       :exact="exact"
+       @click="click"
+    >
         <slot></slot>
     </a>
 </template>
@@ -22,12 +30,17 @@
                 type: String,
                 default: 'active'
             },
+            disabled: {
+                type: Boolean,
+                default: false
+            },
             to: {
                 type: [String, Object],
                 default: null
             },
             href: {
-                type: String
+                type: String,
+                default: ''
             },
             exact: {
                 type: Boolean,
@@ -36,8 +49,15 @@
         },
         methods: {
             click(e) {
-                this.$emit('click', e);
-                this.$root.$emit('shown::dropdown', this);
+                if (this.disabled || this.href === '#') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+
+                if (!this.disabled) {
+                    this.$emit('click', e);
+                    this.$root.$emit('shown::dropdown', this);
+                }
             }
         }
     };

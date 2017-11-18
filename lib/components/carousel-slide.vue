@@ -1,9 +1,13 @@
 <template>
-    <div class="carousel-item" :style="{background,height}">
+    <div class="carousel-item"
+         role="listitem"
+         :id="id || null"
+         :style="{background,height}"
+    >
         <img class="d-block img-fluid" v-if="img" :src="img" :alt="imgAlt">
-        <div :class="contentClasses">
-            <h3 v-if="caption" v-html="caption"></h3>
-            <p v-if="text" v-html="text"></p>
+        <div :is="contentTag" :class="contentClasses">
+            <h3 v-if="caption" :is="captionTag" v-html="caption"></h3>
+            <p v-if="text" :is="textTag" v-html="text"></p>
             <slot></slot>
         </div>
     </div>
@@ -12,6 +16,9 @@
 <script>
     export default {
         props: {
+            id: {
+                type: String
+            },
             img: {
                 type: String
             },
@@ -21,11 +28,23 @@
             contentVisibleUp: {
                 type: String
             },
+            contentTag: {
+                type: String,
+                default: "div"
+            },
             caption: {
                 type: String
             },
+            captionTag: {
+                type: String,
+                default: "h3"
+            },
             text: {
                 type: String
+            },
+            textTag: {
+                type: String,
+                default: "p"
             },
             background: {
                 type: String
@@ -36,14 +55,11 @@
         },
         computed: {
             contentClasses() {
-                const classes = {
-                    'carousel-caption': Boolean(this.caption)
-                };
-                if (this.contentVisibleUp) {
-                    classes['d-none'] = true;
-                    classes[`d-${this.contentVisibleUp}-block`] = true;
-                }
-                return classes;
+                return [
+                    'carousel-caption',
+                    this.contentVisibleUp ? 'd-none' : '',
+                    this.contentVisibleUp ? `d-${this.contentVisibleUp}-block` : ''
+                ];
             }
         }
     };

@@ -1,42 +1,93 @@
 <template>
-    <div class="carousel slide" @mouseenter="pause" @mouseleave="start" :style="{background,height}">
-        <!-- Indicators -->
-        <ol class="carousel-indicators" v-show="indicators">
-            <li v-for="n in slides.length"
-                :class="{active:n-1 === index}"
-                @click="index=n-1"
-            ></li>
-        </ol>
+    <div class="carousel slide"
+         role="region"
+         :id="id || null"
+         :style="{background,height}"
+         :aria-busy="isSliding ? 'true' : 'false'"
+         @mouseenter="pause"
+         @mouseleave="start"
+         @focusin="pause"
+         @focusout="restart"
+         @keydown.left.stop.prevent="prev"
+         @keydown.right.stop.prevent="next"
+    >
 
         <!-- Wrapper for slides -->
-        <div class="carousel-inner" role="listbox">
+        <div class="carousel-inner"
+             role="list"
+             ref="inner"
+             :id="id ? (id + '__BV_inner_') : null"
+        >
             <slot></slot>
         </div>
 
         <!-- Controls -->
         <template v-if="controls">
-            <a class="carousel-control-prev" href="#" role="button" data-slide="prev" @click.stop.prevent="prev">
+            <a class="carousel-control-prev"
+               href="#"
+               role="button"
+               :aria-controls="id ? (id + '__BV_inner_') : null"
+               @click.stop.prevent="prev"
+               @keydown.enter.stop.prevent="prev"
+               @keydown.space.stop.prevent="prev"
+            >
                 <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                <span class="sr-only">Previous</span>
+                <span class="sr-only">{{labelPrev}}</span>
             </a>
-            <a class="carousel-control-next" href="#" role="button" data-slide="next" @click.stop.prevent="next">
+            <a class="carousel-control-next"
+               href="#"
+               role="button"
+               :aria-controls="id ? (id + '__BV_inner_') : null"
+               @click.stop.prevent="next"
+               @keydown.enter.stop.prevent="next"
+               @keydown.space.stop.prevent="next"
+            >
                 <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                <span class="sr-only">Next</span>
+                <span class="sr-only">{{labelNext}}</span>
             </a>
         </template>
+
+        <!-- Indicators -->
+        <ol class="carousel-indicators"
+            role="group"
+            v-show="indicators"
+            :id="id ? (id + '__BV_indicators_') : null"
+            :aria-hidden="indicators ? 'false' : 'true'"
+            :aria-label="(indicators && labelIndicators) ? labelIndicators : null"
+            :aria-owns="(indicators && id) ? (id + '__BV_inner_') : null"
+        >
+            <li v-for="n in slides.length"
+                :key="'slide_' + n"
+                role="button"
+                :id="id ? (id + '__BV_indicator_' + n + '_') : null"
+                :tabindex="indicators ? '0' : '-1'"
+                :class="{active:n-1 === index}"
+                :aria-current="n-1 === index ? 'true' : 'false'"
+                :aria-label="labelGotoSlide + ' ' + n"
+                :aria-describedby="slides[n-1].id || null"
+                :aria-controls="id ? (id + '__BV_inner_') : null"
+                @click="setSlide(n-1)"
+                @keydown.enter.stop.prevent="setSlide(n-1)"
+                @keydown.space.stop.prevent="setSlide(n-1)"
+            ></li>
+        </ol>
+
     </div>
 </template>
 
 <script>
+    import { from as arrayFrom } from '../utils/array';
+    import {observeDom} from '../utils';
+
     const DIRECTION = {
         next: {
             current: 'carousel-item-left',
-            next: 'carousel-item-right',
+            next: 'carousel-item-left',
             overlay: 'carousel-item-next'
         },
         prev: {
             current: 'carousel-item-right',
-            next: 'carousel-item-left',
+            next: 'carousel-item-right',
             overlay: 'carousel-item-prev'
         }
     };
@@ -44,12 +95,32 @@
     export default {
         data() {
             return {
-                index: 0,
+                index: this.value || 0,
                 isSliding: false,
+                intervalId: null,
                 slides: []
             };
         },
         props: {
+            id: {
+                type: String
+            },
+            labelPrev: {
+                type: String,
+                default: 'Previous Slide'
+            },
+            labelNext: {
+                type: String,
+                default: 'Next Slide'
+            },
+            labelGotoSlide: {
+                type: String,
+                default: 'Goto Slide'
+            },
+            labelIndicators: {
+                type: String,
+                default: 'Select a slide to display'
+            },
             interval: {
                 type: Number,
                 default: 5000
@@ -67,63 +138,149 @@
             },
             background: {
                 type: String
+            },
+            value: {
+                type: Number,
+                default: 0
+            }
+        },
+        computed: {
+            isCycling() {
+                return Boolean(this.intervalId);
             }
         },
         methods: {
+            // Set slide
+            setSlide(slide) {
+                // Don't animate when page is not visible
+                if (typeof document !== 'undefined' && document.visibilityState && document.hidden) {
+                    return;
+                }
+
+                // Don't do anything if noting to slide to
+                if (this.slides.length === 0) {
+                    return;
+                }
+                
+                // Don't change slide while transitioning, wait until transition is done
+                if (this.isSliding) {
+                    this.$once('slid', () => this.setSlide(slide));
+                    return;
+                }
+
+                // Wrap around if necessary
+                this.index = Math.max(0, Math.min(Math.floor(slide), this.slides.length - 1));
+            },
+
             // Previous slide
             prev() {
-                if (this.index <= 0) {
-                    this.index = this.slides.length - 1;
-                } else {
-                    this.index--;
-                }
+                this.setSlide(this.index - 1);
             },
 
             // Next slide
             next() {
-                if (this.index >= this.slides.length - 1) {
-                    this.index = 0;
-                } else {
-                    this.index++;
-                }
+                this.setSlide(this.index + 1);
             },
-
+            
             // Pause auto rotation
             pause() {
-                if (this.interval === 0 || typeof this.interval === 'undefined') {
-                    return;
+                if (this.isCycling) {
+                    clearInterval(this.intervalId);
+                    this.intervalId = null;
+
+                    // Make current slide focusable for screen readers
+                    this.slides[this.index].tabIndex = 0;
                 }
-                clearInterval(this._intervalId);
             },
 
             // Start auto rotate slides
             start() {
-                if (this.interval === 0 || typeof this.interval === 'undefined') {
+                // Don't start if no intetrval, or if we are already running
+                if (!Boolean(this.interval) || this.isCycling) {
                     return;
                 }
-                this._intervalId = setInterval(() => {
+                this.slides.forEach(slide => {
+                    slide.tabIndex = -1;
+                });
+                this.intervalId = setInterval(() => {
                     this.next();
                 }, this.interval);
+            },
+
+            // Re-Start auto rotate slides when focus/hover leaves the carousel
+            restart(evt) {
+                if (!evt.relatedTarget || !this.$el.contains(evt.relatedTarget)) {
+                    this.start();
+                }
+            },
+
+            // Update slide list
+            updateSlides() {
+                this.pause();
+
+                // Get all slides
+                this.slides = arrayFrom(this.$refs.inner.querySelectorAll('.carousel-item'));
+
+                const id = this.id;
+                const numSlides = this.slides.length;
+                // Keep slide number in range
+                const index = Math.max(0, Math.min(Math.floor(this.index), numSlides - 1));
+                
+                this.slides.forEach((slide, idx) => {
+                    const n = idx + 1;
+                    if (idx === index) {
+                        slide.classList.add('active');
+                    } else {
+                        slide.classList.remove('active');
+                    }
+                    slide.setAttribute('aria-current', idx === index ? 'true' : 'false');
+                    slide.setAttribute('aria-posinset', String(n));
+                    slide.setAttribute('aria-setsize', String(numSlides));
+                    slide.tabIndex = -1;
+                    if (id) {
+                        slide.setAttribute('aria-controlledby', id + '__BV_indicator_' + n + '_');
+                    }
+                });
+
+                // Set slide as active
+                this.setSlide(index);
+
+                this.start();
             }
+
+        },
+        created() {
+            // Create private properties
+            this._carouselAnimation = null;
         },
         mounted() {
             // Get all slides
-            this.slides = this.$el.querySelectorAll('.carousel-item');
+            this.updateSlides();
 
-            // Set first slide as active
-            this.slides[0].classList.add('active');
-
-            // Auto rotate slides
-            this.start();
+            // Observe child changes so we can update slide list
+            observeDom(this.$refs.inner, this.updateSlides.bind(this), {subtree: false});
         },
         watch: {
-            index(val, oldVal) {
-                if (val === oldVal) {
+            value(newVal, oldVal) {
+                if (newVal !== oldVal) {
+                    this.setSlide(newVal);
+                }
+            },
+            interval(newVal, oldVal) {
+                if (newVal === oldVal) {
                     return;
                 }
-
-                if (this.isSliding) {
-                    this.index = oldVal;
+                if (!Boolean(newVal)) {
+                   // Pausing slide show
+                    this.pause();
+                } else {
+                    // Restarting or Changing interval
+                    this.pause();
+                    this.start();
+                }
+            },
+            index(val, oldVal) {
+                if (val === oldVal || this.isSliding) {
                     return;
                 }
 
@@ -141,31 +298,60 @@
                 const currentSlide = this.slides[oldVal];
                 const nextSlide = this.slides[val];
 
+                // Don't do anything if there aren't any slides to slide to
                 if (!currentSlide || !nextSlide) {
                     return;
                 }
 
                 // Start animating
                 this.isSliding = true;
+                this.$emit('slide', val);
 
-                nextSlide.classList.add(direction.next, direction.overlay);
+                // Update v-model
+                this.$emit('input', this.index);
+
+                nextSlide.classList.add(direction.overlay);
+                // Trigger a reflow of next slide
+                // eslint-ignore-next-line no-void
+                void(nextSlide.offsetHeight);
+
                 currentSlide.classList.add(direction.current);
+                nextSlide.classList.add(direction.next);
 
+                // Clear transition classes after 0.6s transition duration
                 this._carouselAnimation = setTimeout(() => {
-                    this.isSliding = false;
-                    this.$emit('slide', val);
-
-                    currentSlide.classList.remove('active');
+                    nextSlide.classList.remove(direction.next);
+                    nextSlide.classList.remove(direction.overlay);
                     nextSlide.classList.add('active');
 
+                    currentSlide.classList.remove('active');
                     currentSlide.classList.remove(direction.current);
-                    nextSlide.classList.remove(direction.next, direction.overlay);
-                }, 500);
+                    currentSlide.classList.remove(direction.overlay);
+
+                    currentSlide.setAttribute('aria-current', 'false');
+                    nextSlide.setAttribute('aria-current', 'true');
+                    currentSlide.setAttribute('aria-hidden', 'true');
+                    nextSlide.setAttribute('aria-hidden', 'false');
+                    currentSlide.tabIndex = -1;
+                    nextSlide.tabIndex = -1;
+
+                    if (!this.isCycling) {
+                        // Focus the next slide for screen readers if not in play mode
+                        nextSlide.tabIndex = 0;
+                        this.$nextTick(() => {
+                            nextSlide.focus();
+                        });
+                    }
+                    this.isSliding = false;
+                    // Notify ourselves that we're done sliding (slid)
+                    this.$emit('slid', val);
+                    
+                }, 601);
             }
         },
         destroyed() {
             clearTimeout(this._carouselAnimation);
-            clearInterval(this._intervalId);
+            clearInterval(this.intervalId);
         }
     };
 

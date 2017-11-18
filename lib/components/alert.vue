@@ -1,10 +1,15 @@
 <template>
-    <div :class="classObject" role="alert" v-if="localShow">
+    <div v-if="localShow"
+         :class="classObject"
+         role="alert"
+         aria-live="polite"
+         aria-atomic="true"
+    >
         <button type="button"
                 class="close"
                 data-dismiss="alert"
-                aria-label="Close"
-                v-if="dismissible"
+                :aria-label="dismissLabel"
+                v-if="localDismissible"
                 @click.stop.prevent="dismiss"
         >
             <span aria-hidden="true">&times;</span>
@@ -14,21 +19,24 @@
 </template>
 
 <script>
+    import {warn} from '../utils';
+
     export default {
         data() {
             return {
                 countDownTimerId: null,
-                dismissed: false
+                dismissed: false,
+                localDismissible: this.dismissible
             };
         },
         created() {
             if (this.state) {
-                console.warn('<b-alrt> state property is deprecated, please use variant instead.');
+                warn('<b-alert> "state" property is deprecated, please use "variant" property instead.');
             }
         },
         computed: {
             classObject() {
-                return ['alert', this.alertVariant, this.dismissible ? 'alert-dismissible' : ''];
+                return ['alert', this.alertVariant, this.localDismissible ? 'alert-dismissible' : ''];
             },
             alertVariant() {
                 const variant = this.state || this.variant || 'info';
@@ -50,6 +58,10 @@
             dismissible: {
                 type: Boolean,
                 default: false
+            },
+            dismissLabel: {
+                type: String,
+                default: 'Close'
             },
             show: {
                 type: [Boolean, Number],
@@ -81,8 +93,12 @@
 
                 // No timer for boolean values
                 if (this.show === true || this.show === false || this.show === null || this.show === 0) {
+                    this.localDismissible = this.dismissible;
                     return;
                 }
+
+                // Hide dismiss button for auto-dismissing
+                this.localDismissible = false;
 
                 let dismissCountDown = this.show;
                 this.$emit('dismiss-count-down', dismissCountDown);

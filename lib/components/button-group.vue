@@ -1,5 +1,5 @@
 <template>
-    <div :class="classObject" role="group">
+    <div :class="classObject">
         <slot></slot>
     </div>
 </template>
@@ -9,7 +9,7 @@
         computed: {
             classObject() {
                 return [
-                    'btn-' + (this.toolbar ? 'toolbar' : 'group'),
+                    'btn-group',
                     this.vertical ? 'btn-group-vertical' : '',
                     this.size ? ('btn-group-' + this.size) : ''
                 ];
@@ -17,10 +17,6 @@
         },
         props: {
             vertical: {
-                type: Boolean,
-                default: false
-            },
-            toolbar: {
                 type: Boolean,
                 default: false
             },

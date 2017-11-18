@@ -1,13 +1,18 @@
 <template>
     <transition @enter="enter" @before-leave="beforeLeave" mode="out-in">
-        <div role="tabpanel"
-             class="tab-pane"
-             :class="[{show, fade, disabled, active: localActive}]"
-             v-if="localActive || !lazy"
-             v-show="localActive || lazy"
-             ref="panel">
+        <component :is="tag"
+                   :id="id || null"
+                   role="tabpanel"
+                   :class="['tab-pane', {show, fade, disabled, active: localActive}]"
+                   :aria-hidden="localActive ? 'false' : 'true'"
+                   :aria-expanded="localActive ? 'true' : 'false'"
+                   :aria-labelledby="controlledBy || null"
+                   v-if="localActive || !lazy"
+                   v-show="localActive || lazy"
+                   ref="panel"
+        >
              <slot></slot>
-        </div>
+        </component>
     </transition>
 </template>
 
@@ -24,13 +29,26 @@
         data() {
             return {
                 fade: false,
-                localActive: false,
+                localActive: this.active,
                 lazy: true,
                 show: false
             };
         },
+        computed: {
+            controlledBy() {
+                return this.buttonId || (this.id ? (this.id + '__BV_tab_button__') : null);
+            }
+        },
         props: {
             id: {
+                type: String,
+                default: ''
+            },
+            tag: {
+                type: String,
+                default: 'div'
+            },
+            buttonId: {
                 type: String,
                 default: ''
             },

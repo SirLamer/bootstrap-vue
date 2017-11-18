@@ -3,16 +3,19 @@
         <transition-group enter-class="hidden"
                           enter-to-class=""
                           enter-active-class=""
+                          @after-enter="focusFirst"
                           leave-class="show"
                           leave-active-class=""
                           leave-to-class="hidden"
         >
-            <div key="modal" :id="id"
-                 v-show="is_visible"
-                 :class="['modal',{fade: fade, show: is_visible}]"
+            <div :class="['modal',{fade: !noFade, show: is_visible}]"
+                 :id="id || null"
                  role="dialog"
-                 @click="onClickOut($event)"
-                 @keyup.esc="onEsc($event)"
+                 ref="modal"
+                 key="modal"
+                 v-show="is_visible"
+                 @click="onClickOut()"
+                 @keyup.esc="onEsc()"
             >
 
                 <div :class="['modal-dialog','modal-'+size]">
@@ -20,20 +23,24 @@
                          tabindex="-1"
                          role="document"
                          ref="content"
-                         :aria-labeledby="hideHeader ? '' : (id + '_modal_title')"
-                         :aria-describedby="id + '_modal_body'"
+                         :aria-labelledby="(hideHeader || !id) ? null : (id + '__BV_header_')"
+                         :aria-describedby="id ? (id + '__BV_body_') : null"
                          @click.stop
                     >
 
-                        <header class="modal-header" v-if="!hideHeader">
+                        <header class="modal-header"
+                                ref="header"
+                                :id="id ? (id + '__BV_header_') : null"
+                                v-if="!hideHeader"
+                        >
                             <slot name="modal-header">
-                                <h5 class="modal-title" :id="id + '_modal_title'">
+                                <h5 :is="titleTag" class="modal-title">
                                     <slot name="modal-title">{{title}}</slot>
                                 </h5>
                                 <button type="button"
                                         v-if="!hideHeaderClose"
                                         class="close"
-                                        :aria-label="closeTitle"
+                                        :aria-label="headerCloseLabel"
                                         @click="hide"
                                 >
                                     <span aria-hidden="true">&times;</span>
@@ -41,14 +48,22 @@
                             </slot>
                         </header>
 
-                        <div class="modal-body" :id="id + '_modal_body'">
+                        <div class="modal-body" ref="body" :id="id ? (id + '__BV_body_') : null">
                             <slot></slot>
                         </div>
 
-                        <footer class="modal-footer" v-if="!hideFooter">
+                        <footer class="modal-footer" ref="footer" v-if="!hideFooter">
                             <slot name="modal-footer">
-                                <b-btn variant="secondary" @click="hide(false)">{{closeTitle}}</b-btn>
-                                <b-btn variant="primary" @click="hide(true)">{{okTitle}}</b-btn>
+                                <b-btn v-if="!okOnly"
+                                       variant="secondary"
+                                       :size="buttonSize"
+                                       @click="hide(false)"
+                                ><slot name="modal-cancel">{{ closeTitle }}</slot></b-btn>
+                                <b-btn variant="primary"
+                                       :size="buttonSize"
+                                       :disabled="okDisabled"
+                                       @click="hide(true)"
+                                ><slot name="modal-ok">{{ okTitle }}</slot></b-btn>
                             </slot>
                         </footer>
 
@@ -57,7 +72,7 @@
             </div>
 
             <div key="modal-backdrop"
-                 :class="['modal-backdrop',{fade: fade, show: is_visible}]"
+                 :class="['modal-backdrop',{fade: !noFade, show: is_visible}]"
                  v-if="is_visible"
             ></div>
         </transition-group>
@@ -69,7 +84,7 @@
         opacity: 0 !important;
     }
 
-    /* Make modal display as block instead of inline style, and because Vue's v-show deletes inline "display" style*/
+    /* Make modal display as block instead of inline style, and because Vue's v-show deletes inline "display" style */
     .modal {
         display: block;
     }
@@ -77,12 +92,48 @@
 
 <script>
     import bBtn from './button.vue';
+    import { listenOnRootMixin } from '../mixins';
+    import { from as arrayFrom } from '../utils/array'
+
+    const FOCUS_SELECTOR = [
+        'button:not([disabled])',
+        'input:not([disabled])',
+        'select:not([disabled])',
+        'textarea:not([disabled])',
+        'a:not([disabled]):not(.disabled)',
+        '[tabindex]:not([disabled]):not(.disabled)'
+    ].join(',');
+
+    // Determine if an HTML element is visible - Faster than CSS check
+    function isVisible(el) {
+        return el && (el.offsetWidth > 0 || el.offsetHeight > 0);
+    }
+
+    // Find the first visible element contained in a given root element
+    function findFirstVisible(root, selector) {
+        if (!root || !root.querySelectorAll || !selector) {
+            return null;
+        }
+        let els = arrayFrom(root.querySelectorAll(selector));
+
+        // IE 10 & 11 do not support native array.find()
+        // So we try native find first, then fall back to a loop
+        let el = els.find ? els.find(el => isVisible(el)) : null;
+        for (let i = 0; !el && i < els.length; i++) {
+            if (isVisible(els[i])) {
+                el = els[i];
+            }
+        }
+        return el;
+    }
 
     export default {
+        mixins: [listenOnRootMixin],
         components: {bBtn},
         data() {
             return {
-                is_visible: false
+                is_visible: false,
+                return_focus: this.returnFocus || null
             };
         },
         model: {
@@ -118,29 +169,37 @@
                 type: String,
                 default: ''
             },
+            titleTag: {
+                type: String,
+                default: 'h5'
+            },
             size: {
                 type: String,
                 default: 'md'
             },
-            fade: {
-                type: Boolean,
-                default: true
-            },
-            closeTitle: {
+            buttonSize: {
                 type: String,
-                default: 'Close'
+                default: 'md'
             },
-            okTitle: {
-                type: String,
-                default: 'OK'
-            },
-            closeOnBackdrop: {
+            noFade: {
                 type: Boolean,
-                default: true
+                default: false
             },
-            closeOnEsc: {
+            noCloseOnBackdrop: {
                 type: Boolean,
-                default: true
+                default: false
+            },
+            noCloseOnEsc: {
+                type: Boolean,
+                default: false
+            },
+            noAutoFocus: {
+                type: Boolean,
+                default: false
+            },
+            noEnforceFocus: {
+                type: Boolean,
+                default: false
             },
             hideHeader: {
                 type: Boolean,
@@ -153,6 +212,33 @@
             hideHeaderClose: {
                 type: Boolean,
                 default: false
+            },
+            okOnly: {
+                type: Boolean,
+                default: false
+            },
+            okDisabled: {
+                type: Boolean,
+                default: false
+            },
+            visible: {
+                type: Boolean,
+                default: false
+            },
+            returnFocus: {
+                default: null
+            },
+            headerCloseLabel: {
+                type: String,
+                default: 'Close'
+            },
+            closeTitle: {
+                type: String,
+                default: 'Close'
+            },
+            okTitle: {
+                type: String,
+                default: 'OK'
             }
         },
         methods: {
@@ -160,11 +246,18 @@
                 if (this.is_visible) {
                     return;
                 }
+                this.$emit('show');
                 this.is_visible = true;
                 this.$root.$emit('shown::modal', this.id);
                 this.body.classList.add('modal-open');
                 this.$emit('shown');
                 this.$emit('change', true);
+                if (typeof document !== 'undefined') {
+                    // Guard against infinite focus loop
+                    document.removeEventListener('focusin', this.enforceFocus, false);
+                    // Handle constrained focus
+                    document.addEventListener('focusin', this.enforceFocus, false);
+                }
             },
             hide(isOK) {
                 if (!this.is_visible) {
@@ -182,7 +275,7 @@
 
                 // Emit events
                 this.$emit('change', false);
-                this.$emit('hidden', e);
+                this.$emit('hide', e);
 
                 if (isOK === true) {
                     this.$emit('ok', e);
@@ -192,60 +285,118 @@
 
                 // Hide if not canceled
                 if (!canceled) {
+                    if (typeof document !== 'undefined') {
+                        // Remove focus handler
+                        document.removeEventListener('focusin', this.enforceFocus, false);
+                        // Return focus to original button/trigger element if provided
+                        this.returnFocusTo();
+                    }
                     this.is_visible = false;
                     this.$root.$emit('hidden::modal', this.id);
+                    this.$emit('hidden', e);
                     this.body.classList.remove('modal-open');
                 }
             },
             onClickOut() {
                 // If backdrop clicked, hide modal
-                if (this.closeOnBackdrop) {
+                if (this.is_visible && !this.noCloseOnBackdrop) {
                     this.hide();
                 }
             },
             onEsc() {
-                // If ESC presses, hide modal
-                if (this.is_visible && this.closeOnEsc) {
+                // If ESC pressed, hide modal
+                if (this.is_visible && !this.noCloseOnEsc) {
                     this.hide();
+                }
+            },
+            focusFirst() {
+                // Don't try and focus if we are SSR
+                if (typeof document === 'undefined') {
+                    return;
+                }
+                this.$nextTick(() => {
+                    // If activeElement is child of content, no need to change focus
+                    if (document.activeElement && this.$refs.content.contains(document.activeElement)) {
+                        return;
+                    }
+
+                    let el;
+                    if (!this.noAutoFocus) {
+                        // Focus the modal's first focusable item, searching body, footer, then header
+                        if (this.$refs.body) {
+                            el = findFirstVisible(this.$refs.body, FOCUS_SELECTOR);
+                        }
+                        if (!el && this.$refs.footer) {
+                            el = findFirstVisible(this.$refs.footer, FOCUS_SELECTOR);
+                        }
+                        if (!el && this.$refs.header) {
+                            el = findFirstVisible(this.$refs.header, FOCUS_SELECTOR);
+                        }
+                    }
+                    if (!el) {
+                        // Focus the modal content wrapper
+                        el = this.$refs.content;
+                    }
+                    if (el && el.focus) {
+                        el.focus();
+                    }
+                });
+            },
+            returnFocusTo() {
+                // Prrefer returnFocus prop over event specified value
+                let el = this.returnFocus || this.return_focus || null;
+
+                if (el) {
+                    if (typeof el === 'string') {
+                        // CSS Selector
+                        el = document.querySelector(el);
+                    }
+                    if (el && el.$el && typeof el.$el.focus === 'function') {
+                        // Component vm reference
+                        el.$el.focus();
+                    } else if (el && typeof el.focus === 'function') {
+                        // Plain element
+                        el.focus();
+                    }
                 }
             },
             enforceFocus(e) {
                 // If focus leaves modal, bring it back
-                // eventListener bound on document
-                if (this.is_visible &&
+                // Event Listener bound on document
+                if (!this.noEnforceFocus &&
+                    this.is_visible &&
                     document !== e.target &&
                     this.$refs.content &&
                     this.$refs.content !== e.target &&
                     !this.$refs.content.contains(e.target)) {
                     this.$refs.content.focus();
                 }
-            }
-        },
-        created() {
-            this.$root.$on('show::modal', id => {
+            },
+            showHandler(id, triggerEl) {
                 if (id === this.id) {
+                    this.return_focus = triggerEl || null;
                     this.show();
                 }
-            });
-
-            this.$root.$on('hide::modal', id => {
+            },
+            hideHandler(id) {
                 if (id === this.id) {
                     this.hide();
                 }
-            });
+            }
+        },
+        created() {
+            this.listenOnRoot('show::modal', this.showHandler);
+            this.listenOnRoot('hide::modal', this.hideHandler);
         },
         mounted() {
-            if (typeof document !== 'undefined') {
-                document.addEventListener('focus', this.enforceFocus);
-            }
-
             if (this.visible === true) {
                 this.show();
             }
         },
         destroyed() {
+            // Make sure event listener is rmoved
             if (typeof document !== 'undefined') {
-                document.removeEventListener('focus', this.enforceFocus);
+                document.removeEventListener('focusin', this.enforceFocus, false);
             }
         }
     };

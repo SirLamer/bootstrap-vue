@@ -1,48 +1,69 @@
 <template>
     <input v-if="!static"
-           :type="type"
+           ref="input"
+           :is="isTextArea ? 'textarea' : 'input'"
+           :type="isTextArea ? null : type"
            :value="value"
            :name="name"
-           :id="_id"
+           :id="id || null"
            :disabled="disabled"
-           ref="input"
-
-           :is="textarea?'textarea':'input'"
-           :class="['form-control',inputClass]"
-           :rows="rows || rowsCount"
-
+           :required="required"
+           :autocomplete="autocomplete || null"
+           :aria-required="required ? 'true' : null"
+           :aria-invalid="ariaInvalid"
+           :readonly="readonly"
+           :class="inputClass"
+           :rows="isTextArea ? (rows || rowsCount) : null"
            :placeholder="placeholder"
-
-           @input="onInput($event.target.value)"
-           @change="onChange($event.target.value)"
+           @input="onInput($event.target.value, $event.target)"
+           @change="onChange($event.target.value, $event.target)"
            @keyup="onKeyUp($event)"
            @focus="$emit('focus')"
            @blur="$emit('blur')"
     />
     <b-form-input-static v-else
-                         :id="_id"
+                         :id="id || null"
                          :value="value"
-                         :formatter="formatter"
+                         :size="size"
+                         :state="state"
     ></b-form-input-static>
 </template>
 
 <script>
-    import formMixin from '../mixins/form';
-    import generateId from '../mixins/generate-id';
+    import { formMixin } from '../mixins';
     import bFormInputStatic from './form-input-static.vue';
 
     export default {
-        mixins: [formMixin, generateId],
+        mixins: [formMixin],
         components: {bFormInputStatic},
         computed: {
+            isTextArea() {
+                return this.textarea || this.type === 'textarea';
+            },
             rowsCount() {
                 return (this.value || '').toString().split('\n').length;
+            },
+            inputClass() {
+                return [
+                    'form-control',
+                    this.size ? `form-control-${this.size}` : null,
+                    this.state ? `form-control-${this.state}` : null
+                ];
+            },
+            ariaInvalid() {
+                if (this.invalid === false) {
+                    return null;
+                }
+                if (this.invalid === true) {
+                    return 'true';
+                }
+                return this.invalid;
             }
         },
         methods: {
-            format(value) {
+            format(value, el) {
                 if (this.formatter) {
-                    const formattedValue = this.formatter(value);
+                    const formattedValue = this.formatter(value, el);
                     if (formattedValue !== value) {
                         value = formattedValue;
                         this.$refs.input.value = formattedValue;
@@ -50,19 +71,22 @@
                 }
                 return value;
             },
-            onInput(value) {
+            onInput(value, el) {
                 if (!this.lazyFormatter) {
-                    value = this.format(value);
+                    value = this.format(value, el);
                 }
                 this.$emit('input', value);
             },
-            onChange(value) {
-                value = this.format(value);
+            onChange(value, el) {
+                value = this.format(value, el);
                 this.$emit('input', value);
                 this.$emit('change', value);
             },
             onKeyUp(e) {
                 this.$emit('keyup', e);
+            },
+            focus() {
+                this.$refs.input.focus();
             }
         },
         props: {
@@ -72,6 +96,26 @@
             type: {
                 type: String,
                 default: 'text'
+            },
+            size: {
+                type: String,
+                default: null
+            },
+            state: {
+                type: String,
+                default: null
+            },
+            invalid: {
+                type: [Boolean, String],
+                default: false
+            },
+            readonly: {
+                type: Boolean,
+                default: false
+            },
+            autocomplete: {
+                type: String,
+                default: null
             },
             static: {
                 type: Boolean,

@@ -1,5 +1,20 @@
-/* From Vue.JS Docs */
+@import './fonts.css';
+
+.page-enter-active, .page-leave-active {
+    transition: opacity .25s, transform .25s;
+}
+
+.page-enter, .page-leave-to  {
+    opacity: 0;
+    transform: scale(1.01);
+}
+
+body, .nav-link {
+    font-family: 'Open Sans', sans-serif;
+}
+
 .hljs {
+    font-family: "Inconsolata", "Monaco", "Andale Mono", "Lucida Console", "Bitstream Vera Sans Mono", "Courier New", Courier, monospace !important;
     overflow-x: auto;
     position: relative;
     background-color: #f9f9f9;
@@ -14,13 +29,13 @@
 }
 
 code {
-    background: transparent !important;
-    color: #5cb85c;
+    color: #795da3;
 }
 
 .bd-masthead {
     color: white;
-    background-image: linear-gradient(135deg, #4fc08d, #4fc08d);
+    background-image: none !important;
+    background-color:  #4fc08d;
 }
 
 .bd-masthead .lead {
@@ -32,7 +47,39 @@ blockquote {
     font-weight: 300;
 }
 
-.bd-content h1, .bd-content h2, .bd-content h3, .bd-content h4, .bd-content h5 {
+.bd-content>h1, .bd-content>h2, .bd-content>h3, .bd-content>h4, .bd-content>h5 {
     padding-top: 25px;
     padding-bottom: 15px;
+}
+
+#__nuxt > .progress {
+    z-index: 100 !important;
+}
+
+.vue-example {
+    margin: 20px;
+}
+
+pre.editable:after {
+    content: '(double click to edit)';
+    position: absolute;
+    top: 0;
+    right: 0;
+    color: #aaa;
+    text-align: right;
+    font-size: .75em;
+    padding: 5px 10px 0;
+    line-height: 15px;
+    height: 15px;
+    font-weight: 600;
+}
+
+pre.editable:hover:after {
+    font-size: .9em;
+    color: #444;
+    cursor: pointer;
+}
+
+pre.editable.live:after {
+    content: 'Live';
 }

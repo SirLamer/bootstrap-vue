@@ -1,27 +1,21 @@
 <template>
-    <a :is="itemType"
-       :class="['dropdown-item',{ disabled }]"
-       :to="to"
-       :href="hrefString"
-       :disabled="disabled"
-       tabindex="-1"
-       role="menuitem"
-       @click="click"
-       @click.native="click"
-    >
+    <b-link class="dropdown-item"
+            role="menuitem"
+            v-bind="linkProps"
+            @click="$emit('click', $event)">
         <slot></slot>
-    </a>
+    </b-link>
 </template>
 
 <script>
-    import bLink from './link.vue';
+import { props, computed } from '../mixins/link';
+import bLink from './link.vue';
 
-    export default {
-        extends: bLink,
-        computed: {
-            itemType() {
-                return (this.href || this.to) ? this.componentType : 'button';
-            }
-        }
-    };
+export default {
+    components: { bLink },
+    props,
+    computed: {
+        linkProps: computed.linkProps
+    }
+};
 </script>

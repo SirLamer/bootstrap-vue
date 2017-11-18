@@ -1,9 +1,9 @@
 <template>
-    <div :class="['dropdown','btn-group',{dropup, show: visible}]">
+    <div :id="id || null" :class="['dropdown', 'btn-group', {dropup, show: visible}]">
 
-        <b-button :class="{'dropdown-toggle': !split, 'btn-link': link}"
+        <b-button :class="{'dropdown-toggle': !split}"
                   ref="button"
-                  :id="_id"
+                  :id="id ? (id + '__BV_button_') : null"
                   :aria-haspopup="split ? null : 'true'"
                   :aria-expanded="split ? null : (visible ? 'true' : 'false')"
                   :variant="variant"
@@ -11,24 +11,27 @@
                   :disabled="disabled"
                   @click.stop.prevent="click"
         >
-            <slot name="text">{{text}}</slot>
+            <slot name="button-content"><slot name="text">{{text}}</slot></slot>
         </b-button>
 
-        <b-button :class="['dropdown-toggle','dropdown-toggle-split',{'btn-link': link}]"
+        <b-button :class="['dropdown-toggle','dropdown-toggle-split']"
                   v-if="split"
                   ref="toggle"
+                  :id="id ? (id + '__BV_toggle_') : null"
                   :aria-haspopup="split ? 'true' : null"
                   :aria-expanded="split ? (visible ? 'true' : 'false') : null"
                   :variant="variant"
                   :size="size"
                   :disabled="disabled"
                   @click.stop.prevent="toggle"
-        ><span class="sr-only">{{toggleText}}</span></b-button>
+        >
+            <span class="sr-only">{{toggleText}}</span>
+        </b-button>
 
         <div :class="['dropdown-menu',{'dropdown-menu-right': right}]"
              ref="menu"
              role="menu"
-             :aria-labelledby="split ? null : _id"
+             :aria-labelledby="id ? (id + (split ? '__BV_toggle_' : '__BV_button_')) : null"
              @keyup.esc="onEsc"
              @keydown.tab="onTab"
              @keydown.up="focusNext($event,true)"
@@ -40,21 +43,27 @@
     </div>
 </template>
 
+<style scoped>
+    .dropdown-item:focus,
+    .dropdown-item:hover,
+    .dropdown-header:focus {
+        background-color: #eaeaea;
+        outline: none;
+    }
+</style>
+
 <script>
-    import clickOut from '../mixins/clickout';
-    import dropdown from '../mixins/dropdown';
-    import generateId from '../mixins/generate-id';
+    import { dropdownMixin } from '../mixins';
     import bButton from './button.vue';
 
     export default {
-        mixins: [clickOut, dropdown, generateId],
+        mixins: [dropdownMixin],
         components: {bButton},
-        data() {
-            return {
-                visible: false
-            };
-        },
         props: {
+            split: {
+                type: Boolean,
+                default: false
+            },
             toggleText: {
                 type: String,
                 default: 'Toggle Dropdown'
@@ -66,30 +75,7 @@
             variant: {
                 type: String,
                 default: null
-            },
-            link: {
-                type: Boolean,
-                default: false
-            }
-        },
-        methods: {
-            clickOutListener() {
-                this.visible = false;
-            },
-            click(e) {
-                if (this.disabled) {
-                    this.visible = false;
-                    return;
-                }
-
-                if (this.split) {
-                    this.$emit('click', e);
-                    this.$root.$emit('shown::dropdown', this);
-                } else {
-                    this.toggle();
-                }
             }
         }
     };
-
 </script>

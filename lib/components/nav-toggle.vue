@@ -2,6 +2,8 @@
     <button :class="classObject"
             type="button"
             :aria-label="label"
+            :aria-controls="target.id ? target.id : target"
+            :aria-expanded="toggleState ? 'true' : 'false'"
             @click="onclick"
     >
         <span class="navbar-toggler-icon"></span>
@@ -9,8 +11,10 @@
 </template>
 
 <script>
+import { listenOnRootMixin } from '../mixins';
 
 export default {
+    mixins: [listenOnRootMixin],
     computed: {
         classObject() {
             return [
@@ -19,7 +23,11 @@ export default {
             ];
         }
     },
-
+    data() {
+        return {
+            toggleState: false
+        };
+    },
     props: {
         label: {
             type: String,
@@ -33,7 +41,6 @@ export default {
             required: true
         }
     },
-
     methods: {
         onclick() {
             const target = this.target;
@@ -41,7 +48,15 @@ export default {
                 target.toggle();
             }
             this.$root.$emit('collapse::toggle', this.target);
+        },
+        handleStateEvt(target, state) {
+            if (target === this.target || target === this.target.id) {
+                this.toggleState = state;
+            }
         }
+    },
+    created() {
+        this.listenOnRoot('collapse::toggle::state', this.handleStateEvt);
     }
 };
 </script>

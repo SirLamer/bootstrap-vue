@@ -68,6 +68,8 @@ export default {
       // Instantiate ToolTip/PopOver on target
       // createToolpop method must exist in main component
       if (this.createToolpop()) {
+        // Listen to open signals from others
+        this.$on('open', this.onOpen)
         // Listen to close signals from others
         this.$on('close', this.onClose)
         // Observe content Child changes so we can notify popper of possible size change
@@ -149,6 +151,11 @@ export default {
         cfg.html = true
       }
       return cfg
+    },
+    onOpen () {
+      if (this._toolpop) {
+        this._toolpop.show()
+      }
     },
     onClose (callback) {
       if (this._toolpop) {

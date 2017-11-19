@@ -49,14 +49,14 @@
     "es"
   ],
   "scripts": {
-    "build": "build/build",
-    "watch": "rollup -c build/rollup.config.js --watch",
+    "build": "cross-env build/build",
+    "watch": "cross-env rollup -c build/rollup.config.js --watch",
     "docs-dev": "nuxt dev -c docs/nuxt.config.js",
     "docs-gen": "nuxt generate -c docs/nuxt.config.js",
     "docs-publish": "gh-pages -t -d docs-dist -b master -r git@github.com:bootstrap-vue/bootstrap-vue.github.io.git",
-    "test": "yarn lint && NODE_ENV=test jest",
+    "test": "cross-env yarn lint && NODE_ENV=test jest",
     "lint": "eslint src",
-    "release": "npm run build && npm run test && standard-version",
+    "release": "cross-env npm run build && npm run test && standard-version",
     "postinstall": "opencollective postinstall || exit 0"
   },
   "peerDependencies": {
@@ -78,7 +78,7 @@
     "clean-css": "^4.1.9",
     "codecov": "^3.0.0",
     "codemirror": "^5.31.0",
-    "cross-env": "^5.1.0",
+    "cross-env": "^5.1.1",
     "eslint": "^4.11.0",
     "eslint-config-standard": "^10.2.1",
     "eslint-plugin-import": "^2.8.0",

@@ -284,8 +284,8 @@ close automatically as soon as someone trys to interact with the content.
 
 If you absolutely must use a trigger other than `click` (or want to disable closing of the
 popover when the trigger element is clicked a second time), then you can either:
- - Listen for the `hide` event on the `<b-popover>` element, and call the `preventDefault()` method (when apropriate) on the `BvEvent` passed to your `hide` handler, or
- - Disable your trigger element (if possible) as soon as the popover opens (via the `show` event), and re-enable it when apropriate.
+ - Listen for the `hide` event on the `<b-popover>` element, and call the `preventDefault()` method (when appropriate) on the `BvEvent` passed to your `hide` handler, or
+ - Disable your trigger element (if possible) as soon as the popover opens (via the `show` event), and re-enable it when appropriate.
 
 For practical purposes, interactive content popovers should be minimal. The maximum
 width of the popover is hard coded by Bootstrap V4 CSS to `276px`. Tall popovers on

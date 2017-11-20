@@ -434,10 +434,10 @@ small screens can be harder to deal with on mobile devices (such as smart-phones
 <!-- popover-advanced-1.vue -->
 ```
 
-### 'Open' and 'close' event calls
+### Open and Close event calls
 The Popover may be commanded to open and close externally by passing 'open' and 'close' events to the Popover component by reference.
 
-<em>Important:</em> A popover which is opened by an event call can only be closed by an event call. Built-in triggers will not work... until a trigger event tries to open the popover even though it is already open. In the below example, this will mean that when the leftmost Popover is opened with the 'open' event, it will take two on-button clicks to close it. Play with the below demo to understand this. Ultimately, this means that when you want programmatic control external to the Popover component, you should disable built-in triggers and handle control yourself as demonstrated by the rightmost Popover.
+A popover which is opened by an event call can only be closed by an event call. Built-in triggers will not work... until a trigger event tries to open the popover even though it is already open. In the below example, this will mean that when the leftmost Popover is opened with the 'open' event, it will take two on-button clicks to close it. Play with the below demo to understand this. This means that when you desire programmatic control external to the Popover component, you should disable built-in triggers and handle control yourself as demonstrated by the rightmost Popover.
 
 ```html
 <template>
@@ -451,7 +451,7 @@ The Popover may be commanded to open and close externally by passing 'open' and 
       </b-popover>
     </div>
     <div class="ml-3">
-      <b-btn id="exPopoverManual2" ref="button">
+      <b-btn id="exPopoverManual2" ref="button" @click="popToggle">
         Comfortably Numb
       </b-btn>
       <b-popover target="exPopoverManual2" triggers="" placement="bottom" ref="popover2" @shown="onShown" @hidden="onHidden">
@@ -475,9 +475,7 @@ The Popover may be commanded to open and close externally by passing 'open' and 
 <script>
   export default {
       data: {
-          return {
-            popoverIsOpen: false
-          }
+        popoverIsOpen: false
       },
       methods: {
           popOpen() {

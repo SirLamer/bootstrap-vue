@@ -276,11 +276,12 @@ Just need quick popovers without too much markup? Use the
 Refer to the [`v-b-popover` directive](/docs/directives/popover) documentation for detailed
 information on the directive usage.
 
-## Advanced `<b-popover>` usage with reactive content
+## Advanced `<b-popover>` usage
 
+### Reactive content
 You can even make your `<b-popover>` content interactive. Just remember not to use the
-`focus`, `hover` or `blur` triggers (use only `click`), otherwsie your popover will
-close automatically as soon as someone trys to interact with the content.
+`focus`, `hover` or `blur` triggers (use only `click`), otherwise your popover will
+close automatically as soon as someone tries to interact with the content.
 
 If you absolutely must use a trigger other than `click` (or want to disable closing of the
 popover when the trigger element is clicked a second time), then you can either:
@@ -431,6 +432,75 @@ small screens can be harder to deal with on mobile devices (such as smart-phones
 </script>
 
 <!-- popover-advanced-1.vue -->
+```
+
+### 'Open' and 'close' event calls
+The Popover may be commanded to open and close externally by passing 'open' and 'close' events to the Popover component by reference.
+
+<em>Important:</em> A popover which is opened by an event call can only be closed by an event call. Built-in triggers will not work... until a trigger event tries to open the popover even though it is already open. In the below example, this will mean that when the leftmost Popover is opened with the 'open' event, it will take two on-button clicks to close it. Play with the below demo to understand this. Ultimately, this means that when you want programmatic control external to the Popover component, you should disable built-in triggers and handle control yourself as demonstrated by the rightmost Popover.
+
+```html
+<template>
+  <div class="d-flex">
+    <div>
+      <b-btn id="exPopoverManual1" ref="button">
+        Unreliable
+      </b-btn>
+      <b-popover target="exPopoverManual1" triggers="click" placement="top" ref="popover1">
+        I can be stubborn sometimes.
+      </b-popover>
+    </div>
+    <div class="ml-3">
+      <b-btn id="exPopoverManual2" ref="button">
+        Comfortably Numb
+      </b-btn>
+      <b-popover target="exPopoverManual2" triggers="" placement="bottom" ref="popover2" @shown="onShown" @hidden="onHidden">
+        I do believe it's working, good.
+      </b-popover>
+    </div>
+    <div class="ml-3">
+      <b-btn @click="popOpen">
+        Open
+      </b-btn>
+      <b-btn @click="popClose">
+        Close
+      </b-btn>
+      <b-btn @click="popToggle">
+        Toggle
+      </b-btn>
+    </div>
+  </div>
+</template>
+
+<script>
+  export default {
+      data: {
+          return {
+            popoverIsOpen: false
+          }
+      },
+      methods: {
+          popOpen() {
+              this.$refs.popover1.$emit('open');
+              this.$refs.popover2.$emit('open');
+          },
+          popClose() {
+              this.$refs.popover1.$emit('close');
+              this.$refs.popover2.$emit('close');
+          },
+          popToggle() {
+              this.$refs.popover2.$emit(this.popoverIsOpen ? 'close' : 'open');
+          },
+          onShown() {
+              this.popoverIsOpen = true;
+          },
+          onHidden() {
+              this.popoverIsOpen = false;
+          }
+      }
+  }
+</script>
+<!-- popover-advanced-2.vue -->
 ```
 
 ## Closing popovers

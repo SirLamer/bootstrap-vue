@@ -443,29 +443,37 @@ A popover which is opened by an event call can only be closed by an event call. 
 <template>
   <div class="d-flex">
     <div>
-      <b-btn id="exPopoverManual1" ref="button">
+      <b-btn id="exPopoverManual1" variant="primary" ref="button">
         Unreliable
       </b-btn>
-      <b-popover target="exPopoverManual1" triggers="click" placement="top" ref="popover1">
+      <b-popover target="exPopoverManual1"
+                 triggers="click"
+                 placement="top"
+                 ref="popover1">
         I can be stubborn sometimes.
       </b-popover>
     </div>
     <div class="ml-3">
-      <b-btn id="exPopoverManual2" ref="button" @click="popToggle">
+      <b-btn id="exPopoverManual2" variant="primary" ref="button" @click="popToggle">
         Comfortably Numb
       </b-btn>
-      <b-popover target="exPopoverManual2" triggers="" placement="bottom" ref="popover2" @shown="onShown" @hidden="onHidden">
+      <b-popover target="exPopoverManual2"
+                 triggers=""
+                 placement="bottom"
+                 ref="popover2"
+                 @shown="onShown"
+                 @hidden="onHidden">
         I do believe it's working, good.
       </b-popover>
     </div>
     <div class="ml-3">
-      <b-btn @click="popOpen">
+      <b-btn variant="primary" @click="popOpen">
         Open
       </b-btn>
-      <b-btn @click="popClose">
+      <b-btn variant="primary" @click="popClose">
         Close
       </b-btn>
-      <b-btn @click="popToggle">
+      <b-btn variant="primary"@click="popToggle">
         Toggle
       </b-btn>
     </div>
